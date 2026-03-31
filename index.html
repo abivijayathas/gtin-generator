@@ -255,21 +255,6 @@
   <div class="page-title">GTIN Generator</div>
   <p class="page-subtitle">Enter 12-digit UPC codes to generate GTIN-14 and Case GTIN values for Walmart Item Set Up.</p>
 
-  <div class="info-strip">
-    <div class="info-item">
-      <span class="info-label">Col B — GTIN-14</span>
-      <span class="info-value">"00" + UPC</span>
-    </div>
-    <div class="info-item">
-      <span class="info-label">Col E — Case GTIN</span>
-      <span class="info-value">"10" + UPC[0–10] + check digit</span>
-    </div>
-    <div class="info-item">
-      <span class="info-label">Input Format</span>
-      <span class="info-value">12-digit UPC, one per line</span>
-    </div>
-  </div>
-
   <div class="card">
     <div class="card-title">Input UPC Codes</div>
     <textarea id="upcInput" placeholder="Paste 12-digit UPC codes here, one per line:&#10;622793971925&#10;622793971963&#10;622793972007"></textarea>
@@ -290,9 +275,9 @@
       <table>
         <thead>
           <tr>
-            <th>Col A — UPC Code</th>
-            <th>Col B — GTIN-14</th>
-            <th>Col E — Case GTIN</th>
+            <th>UPC Code</th>
+            <th>GTIN-14</th>
+            <th>Case GTIN</th>
           </tr>
         </thead>
         <tbody id="resultsBody"></tbody>
