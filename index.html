@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Walmart GTIN Generator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; padding: 24px; color: #1a202c; }
+  h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; color: #1a202c; }
+  p.sub { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+
+  .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+  textarea {
+    width: 100%; height: 140px; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 10px 12px; font-size: 13px; font-family: monospace; resize: vertical;
+    outline: none; transition: border 0.2s;
+  }
+  textarea:focus { border-color: #3b82f6; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 12px; }
+  button {
+    padding: 9px 20px; border: none; border-radius: 8px; font-size: 13px;
+    font-weight: 600; cursor: pointer; transition: background 0.2s;
+  }
+  .btn-primary { background: #2563eb; color: white; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-secondary { background: #e2e8f0; color: #374151; }
+  .btn-secondary:hover { background: #cbd5e1; }
+  .btn-green { background: #16a34a; color: white; }
+  .btn-green:hover { background: #15803d; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: #f8fafc; text-align: left; padding: 10px 12px;
+    font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0;
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  tbody tr:hover { background: #f8fafc; }
+  tbody td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-family: monospace; font-size: 13px; }
+  .col-a { color: #374151; }
+  .col-b { color: #2563eb; font-weight: 600; }
+  .col-e { color: #16a34a; font-weight: 600; }
+  .col-err { color: #dc2626; font-style: italic; font-family: sans-serif; }
+
+  .error-msg { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-top: 10px; }
+  .count-badge { display: inline-block; background: #dbeafe; color: #1d4ed8; border-radius: 20px; padding: 2px 10px; font-size: 12px; font-weight: 600; margin-left: 8px; }
+  .section-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; }
+</style>
+</head>
+<body>
+
+<h1>🏷️ Walmart GTIN Generator</h1>
+<p class="sub">Enter 12-digit UPC codes (one per line) to generate GTIN-14 and Case GTIN values.</p>
+
+<div class="card">
+  <div class="section-title">Input UPC Codes (Column A)</div>
+  <textarea id="upcInput" placeholder="Paste your 12-digit UPC codes here, one per line:&#10;622793971925&#10;622793971963&#10;622793972007"></textarea>
+  <div class="btn-row">
+    <button class="btn-primary" onclick="generate()">Generate GTINs</button>
+    <button class="btn-secondary" onclick="clearAll()">Clear</button>
+  </div>
+  <div id="errorMsg"></div>
+</div>
+
+<div class="card" id="resultsCard" style="display:none">
+  <div class="section-title">
+    Results
+    <span class="count-badge" id="countBadge"></span>
+    <button class="btn-green" style="margin-left:auto; padding:6px 14px;" onclick="copyTSV()">📋 Copy for Excel</button>
+  </div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>Col A — UPC Code</th>
+          <th>Col B — GTIN-14</th>
+          <th>Col E — Case GTIN</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function calcCheckDigit(s13) {
+  let sum = 0;
+  for (let i = 0; i < 13; i++) {
+    const d = parseInt(s13[i]);
+    sum += d * (i % 2 === 0 ? 3 : 1);
+  }
+  return (10 - (sum % 10)) % 10;
+}
+
+function generate() {
+  const raw = document.getElementById('upcInput').value.trim();
+  const errDiv = document.getElementById('errorMsg');
+  errDiv.innerHTML = '';
+
+  if (!raw) {
+    errDiv.innerHTML = '<div class="error-msg">Please enter at least one UPC code.</div>';
+    return;
+  }
+
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const tbody = document.getElementById('resultsBody');
+  tbody.innerHTML = '';
+  let validCount = 0;
+
+  lines.forEach(upc => {
+    const tr = document.createElement('tr');
+    if (!/^\d{12}$/.test(upc)) {
+      tr.innerHTML = `<td class="col-a">${upc}</td><td class="col-err" colspan="2">⚠ Invalid — must be exactly 12 digits</td>`;
+      tbody.appendChild(tr);
+      return;
+    }
+    const colB = '00' + upc;
+    const colC = '10' + upc.substring(0, 11);
+    const checkDigit = calcCheckDigit(colC);
+    const colE = colC + checkDigit;
+    tr.innerHTML = `<td class="col-a">${upc}</td><td class="col-b">${colB}</td><td class="col-e">${colE}</td>`;
+    tbody.appendChild(tr);
+    validCount++;
+  });
+
+  document.getElementById('countBadge').textContent = validCount + ' items';
+  document.getElementById('resultsCard').style.display = 'block';
+}
+
+function copyTSV() {
+  const rows = document.querySelectorAll('#resultsBody tr');
+  let tsv = 'UPC Code\tGTIN-14\tCase GTIN\n';
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    const vals = Array.from(cells).map(c => c.textContent.trim());
+    tsv += vals.join('\t') + '\n';
+  });
+  navigator.clipboard.writeText(tsv).then(() => {
+    const btn = document.querySelector('.btn-green');
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = '📋 Copy for Excel', 2000);
+  });
+}
+
+function clearAll() {
+  document.getElementById('upcInput').value = '';
+  document.getElementById('resultsCard').style.display = 'none';
+  document.getElementById('errorMsg').innerHTML = '';
+}
+</script>
+</body>
+</html>
